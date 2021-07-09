@@ -22,7 +22,6 @@ public class Cliente implements Serializable {
     private Date createAt;
 
 
-
     public long getId() {
         return id;
     }
