@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,20 +70,43 @@ public class ClienteRestController {
     }
 
     @PutMapping("/clientes/{id}")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Cliente update(@PathVariable Long id, @RequestBody Cliente cliente){
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Cliente cliente){
+
         Cliente clienteActual = clienteService.findById(id);
+        Cliente clienteUpdated = null;
+        Map<String, Object> response = new HashMap<>();
 
-        clienteActual.setNombre(cliente.getNombre());
-        clienteActual.setApellido(cliente.getApellido());
-        clienteActual.setEmail(cliente.getEmail());
 
-        return clienteService.save(clienteActual);
+        if(clienteActual == null){
+            response.put("mensaje", "Error: no se pudo editar el cliente con el id: ".concat(id.toString().concat(" No existe en la base de datos")));
+            return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NOT_FOUND);
+        }
+
+        try{
+            Date createdAtUpdated = new Date();
+            clienteActual.setNombre(cliente.getNombre());
+            clienteActual.setApellido(cliente.getApellido());
+            clienteActual.setEmail(cliente.getEmail());
+            clienteActual.setCreateAt(createdAtUpdated);
+
+            clienteUpdated = clienteService.save(clienteActual);
+
+        }catch (DataAccessException e){
+            response.put("mensaje", "Error al realizar la modificacion en la base de datos");
+            response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+            return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        response.put("mensaje", "El cliente fue modificado con exito.");
+        response.put("cliente", clienteUpdated);
+        return new ResponseEntity<Map<String, Object>>(response, HttpStatus.CREATED);
+
     }
 
     @DeleteMapping("/clientes/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id){
+
         clienteService.delete(id);
     }
 
